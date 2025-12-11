@@ -1,11 +1,12 @@
 // import { config } from 'dotenv';
 //import 'dotenv/config';
 import dotenv from 'dotenv';
+import path from 'path';
 
 import { z } from 'zod';
 
 if (process.env.NODE_ENV === 'test') {
-  dotenv.config({ path: '.env.test' });
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 } else {
   dotenv.config();
 }

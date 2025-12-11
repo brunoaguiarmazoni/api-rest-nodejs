@@ -83,11 +83,82 @@ export async function booksRouter(app: FastifyInstance) {
     },
   );
 
-  app.put('/:id', () => {
-    // Implement PUT route for updating a book
-  });
+  app.put(
+    '/:id',
+    {
+      preHandler: [app.authenticate],
+    },
+    async (request) => {
+      const { id: user_id } = request.user;
 
-  app.delete('/:id', () => {
-    // Implement PUT route for updating a book
-  });
+      const updateBookParamsSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const updateBookBodySchema = z.object({
+        title: z.string().optional(),
+        genrer: z.string().optional(),
+        author: z.string().optional(),
+      });
+
+      const { id } = updateBookParamsSchema.parse(request.params);
+      const { title, author, genrer } = updateBookBodySchema.parse(
+        request.body,
+      );
+
+      const book = await knex('books')
+        .where({
+          id,
+          user_id,
+        })
+        .first();
+
+      if (!book) {
+        return {
+          error: 'Book not found',
+        };
+      }
+
+      await knex('books').where({ id }).update({
+        title: title || book.title,
+        author: author || book.author,
+        genrer: genrer || book.genrer,
+      });
+
+      return { message: 'Book updated successfully' };
+    },
+  );
+
+  app.delete(
+    '/:id',
+    {
+      preHandler: [app.authenticate],
+    },
+    async (request, reply) => {
+      const { id: user_id } = request.user;
+
+      const deleteBookParamsSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const { id } = deleteBookParamsSchema.parse(request.params);
+
+      const book = await knex('books')
+        .where({
+          id,
+          user_id,
+        })
+        .first();
+
+      if (!book) {
+        return reply.status(404).send({
+          error: 'Book not found',
+        });
+      }
+
+      await knex('books').where({ id }).delete();
+
+      return reply.status(204).send();
+    },
+  );
 }
